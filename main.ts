@@ -1,8 +1,9 @@
 const M_PI = 3.141592653589793
-serial.writeLine(M_PI.toString)
+
 
 // basic.showNumber(M_PI)
 let jd = 2459448.3615972223
+serial.writeValue("JD", jd)
 let AzEl = SolarAzEl(jd, 37.106203, -8.198446, 16)
 //basic.showString("" + AzEl[0] + " " + AzEl[1])
 
@@ -47,7 +48,9 @@ for (let i = 0; i < chi2_data2_lst.length; i++) {
     }
 }
 for (let i = 0; i < chi2_data_lst.length; i++) {
-    basic.showString("JD = " + chi2_data_lst[i])
+    //basic.showString("JD = " + chi2_data_lst[i])
+
+    serial.writeNumbers(chi2_data_lst)
 }
 
 
@@ -135,6 +138,7 @@ function SolarAzEl (jd: number, Lat: number, Lon: number, Alt: number) {
     let zhor = x * Math.sin((90 - Lat) * (M_PI / 180)) + z * Math.cos((90 - Lat) * (M_PI / 180))
 
 	// Find the h and AZ
+    
     let Az = Math.atan2(yhor, xhor) * (180 / M_PI) + 180
     let El = Math.asin(zhor) * (180 / M_PI)
     return [Az, El]
@@ -148,5 +152,6 @@ function SolarAzEl (jd: number, Lat: number, Lon: number, Alt: number) {
 
 
 basic.forever(function () {
-	
+	let Eli = input.rotation(Rotation.Roll)
+    serial.writeNumber(Eli)
 })
