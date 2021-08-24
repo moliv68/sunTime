@@ -1,62 +1,18 @@
 const M_PI = 3.141592653589793
-
+const jd = 2459428 //1 de agosto 2021, 12:00:00
 
 // basic.showNumber(M_PI)
-let jd = 2459448.3615972223
-serial.writeValue("JD", jd)
-let AzEl = SolarAzEl(jd, 37.106203, -8.198446, 16)
+
+//serial.writeValue("JD", jd)
+//let AzEl = SolarAzEl(jd, 37.106203, -8.198446, 16)
 //basic.showString("" + AzEl[0] + " " + AzEl[1])
 
-let chi2_data_lst = []
-let chi2_data2_lst = []
-let chi2_lst = []
 
-
-for (let h = -8; h < 9; h++) {
-    for (let m = 0; m < 60; m += 10) {
-        let jd_i = Math.trunc(jd) + (h + m / 60) / 24
-        let AzEl_p = SolarAzEl(jd_i, 37.106203, -8.198446, 16)
-        let chi2_p = (AzEl[0] - AzEl_p[0]) ** 2 + (AzEl[1] - AzEl_p[1]) ** 2
-        if (chi2_p < 2) {
-            chi2_data_lst.push(jd_i)
-        }
-    }
-}
-
-
-for (let i = 0; i < chi2_data_lst.length; i++) {
-    for (let m = -5; m < 6; m++) {
-        let data_p = chi2_data_lst[i] + m / 60 / 24
-        let AzEl_p = SolarAzEl(data_p, 37.106203, -8.198446, 16)
-        let chi2 = (AzEl[0] - AzEl_p[0]) ** 2 + (AzEl[1] - AzEl_p[1]) ** 2
-        if (chi2 < .02) {
-            chi2_data2_lst.push(data_p)
-        }
-    }
-}
-
-chi2_data_lst = []
-
-for (let i = 0; i < chi2_data2_lst.length; i++) {
-    for (let s = -30; s < 31; s++) {
-        let data_p = chi2_data2_lst[i] + s / 3600 / 24
-        let AzEl_p = SolarAzEl(data_p, 37.106203, -8.198446, 16)
-        let chi2 = (AzEl[0] - AzEl_p[0]) ** 2 + (AzEl[1] - AzEl_p[1]) ** 2
-        if (chi2 < .00005) {
-            chi2_data_lst.push(data_p)
-        }
-    }
-}
-for (let i = 0; i < chi2_data_lst.length; i++) {
-    //basic.showString("JD = " + chi2_data_lst[i])
-
-    serial.writeNumbers(chi2_data_lst)
-}
 
 
 function SolarAzEl (jd: number, Lat: number, Lon: number, Alt: number) {
     //jd = julian_day(utc_time_point)
-
+    //serial.writeLine("AzEl")
     let d = jd - 2451543.5
 
 	//Keplerian Elements for the Sun(geocentric)
@@ -152,6 +108,70 @@ function SolarAzEl (jd: number, Lat: number, Lon: number, Alt: number) {
 
 
 basic.forever(function () {
-	let Eli = input.rotation(Rotation.Roll)
-    serial.writeNumber(Eli)
+	let El = input.rotation(Rotation.Roll)
+   // let Pitchi = input.rotation(Rotation.Pitch)
+    let Az = input.compassHeading()
+    serial.writeLine("Roll = " + El + "  Pitch = "  + " Heading = " + Az)
+    let chi2_data_lst = []
+    let chi2_data2_lst = []
+    let chi2_lst = []
+    let d = 0
+    let h = 0
+    let m = 0
+    let s = 0
+
+    for (d = 0; d < 31; d++){
+       for (h = -8; h < 9; h++) {
+            for (m = 0; m < 60; m += 10) {
+                let jd_i = jd + d + (h + m / 60) / 24
+                let AzEl_p = SolarAzEl(jd_i, 37.106203, -8.198446, 16)
+                let chi2 = (Az - AzEl_p[0]) ** 2 + (El - AzEl_p[1]) ** 2
+                serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
+                if (chi2 < 2) {
+                    chi2_data_lst.push(jd_i)
+                }
+            }
+         } 
+    }
+    
+
+
+    for (let i = 0; i < chi2_data_lst.length; i++) {
+        for (m = -5; m < 6; m++) {
+            let data_p = chi2_data_lst[i] + m / 60 / 24
+            let AzEl_p = SolarAzEl(data_p, 37.106203, -8.198446, 16)
+            let chi2 = (Az - AzEl_p[0]) ** 2 + (El- AzEl_p[1]) ** 2
+            serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
+            if (chi2 < .02) {
+                chi2_data2_lst.push(data_p)
+            }
+        }
+    }
+
+    chi2_data_lst = []
+
+    for (let i = 0; i < chi2_data2_lst.length; i++) {
+        for (s = -30; s < 31; s++) {
+            let data_p = chi2_data2_lst[i] + s / 3600 / 24
+            let AzEl_p = SolarAzEl(data_p, 37.106203, -8.198446, 16)
+            let chi2 = (Az - AzEl_p[0]) ** 2 + (El - AzEl_p[1]) ** 2
+            serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
+            if (chi2 < .00005) {
+                chi2_data_lst.push(data_p)
+            }
+        }
+    }
+    if (chi2_data_lst.length>0){
+        serial.writeLine("Encontrou " + chi2_data_lst.length)
+        for (let i = 0; i < chi2_data_lst.length; i++) {
+        //basic.showString("JD = " + chi2_data_lst[i])
+
+        serial.writeNumbers(chi2_data_lst)
+        }
+    }else{
+        serial.writeLine("Não Encontrou")
+    }
+    
+    
+
 })
