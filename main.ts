@@ -123,7 +123,7 @@ basic.forever(function () {
     let m = 0
     let s = 0
 
-    for (d = 23; d < 27; d++){
+    for (d = 23; d < 25; d++){
        basic.showNumber(d)
        for (h = -8; h < 9; h++) {
             for (m = 0; m < 60; m += 10) {
@@ -147,32 +147,28 @@ basic.forever(function () {
             let chi2 = (Az - AzEl_p[0]) ** 2 + (El- AzEl_p[1]) ** 2
             //serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
             //if (chi2 < .02) {
-            chi2_data2_lst.push([chi2,jd_i])
+            chi2_data2_lst.set(3, [chi2, jd_i])
+            chi2_data2_lst.sort(function (a, b) { return a[0] - b[0] })
             //}
         }
     })
 
-    //chi2_data_lst = []
-
-   // for (let i = 0; i < chi2_data2_lst.length; i++) {
-    chi2_data2_lst.forEach(el => {
+   /* chi2_data2_lst.forEach(el => {
         for (s = -30; s < 31; s++) {
             let jd_i = el[1] + s / 3600 / 24
             let AzEl_p = SolarAzEl(jd_i, 37.106203, -8.198446, 53)
             let chi2 = (Az - AzEl_p[0]) ** 2 + (El - AzEl_p[1]) ** 2
-            //serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
-            //if (chi2 < .00005) {
-                //chi2_data_lst.push(data_p)
-            //}
+            
         }
-    })
+    }) */
     
-    serial.writeLine("Encontrou " + chi2_data_lst.length)
-    for (let i = 0; i < 3; i++) {
+    serial.writeLine("Encontrou ")
+    chi2_data2_lst.forEach(el => {
         //basic.showString("JD = " + chi2_data_lst[i])
-        serial.writeNumbers(chi2_data_lst[i])
+        let jd_Decimal = el[1] % 1
+        serial.writeLine("Chi2 = " + el[0] + " --- dia " + (1 + Math.floor(el[1] - jd)) + " --- " + Math.floor(jd_Decimal*24/60)+12)
        // serial.writeNumbers(chi2_data_lst)
   
-    }  
+    })  
    
 })
