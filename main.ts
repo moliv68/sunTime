@@ -102,28 +102,38 @@ function SolarAzEl (jd: number, Lat: number, Lon: number, Alt: number) {
 
 basic.forever(function () {
 	do {
+        control.waitMicros(50000)
+        input.onButtonPressed(Button.A, () => {
+            input.calibrateCompass();
+        })
         basic.clearScreen()
         led.plot(2, Math.floor(input.rotation(Rotation.Pitch)*5/10)+2)
-        //serial.writeNumber(Math.floor(Math.abs(input.rotation(Rotation.Pitch) * 5 / 90)))
+        serial.writeLine(input.rotation(Rotation.Roll) + ";" + (input.compassHeading() - 90.0 - 1.33))
     }
     while( input.buttonIsPressed(Button.B)==false)
-    let El = input.rotation(Rotation.Roll)
-   // let Pitchi = input.rotation(Rotation.Pitch)
-    let Az = Math.abs(input.compassHeading() -90.0 -1.33) //1.33w declinação magnética
+    let El=0.0
+    let Az = 0.0
+    for (let i = 0; i <10; i++){
+        El += input.rotation(Rotation.Roll)
+        Az += input.compassHeading()
+        basic.showNumber(10-i)
+    }
+    El = El/10.0
+    Az = Math.abs(Az/10.0 -90.0 -1.33) //1.33w declinação magnética
     
     serial.writeLine("Az_m = " + Az + " El_m = " + El)
     
     //control.waitMicros(40000000)
-    
-    let chi2_data_lst = [[20000, 0], [20000, 0], [20000, 0], [20000, 0]]
-    let chi2_data2_lst = [[20000, 0], [20000, 0], [20000, 0], [20000, 0]]
+    //[chi2, dia, hora, minuto]
+    let chi2_data_lst = [[20000, 0, 0, 0], [20000, 0, 0, 0], [20000, 0, 0, 0], [20000, 0, 0, 0]]
+    let chi2_data2_lst = [[20000, 0, 0, 0], [20000, 0, 0, 0], [20000, 0, 0, 0], [20000, 0, 0, 0]]
     let chi2_lst = []
     let d = 0
     let h = 0
     let m = 0
     let s = 0
 
-    for (d = 23; d < 25; d++){
+    for (d = 25; d < 26; d++){
        basic.showNumber(d)
        for (h = -8; h < 9; h++) {
             for (m = 0; m < 60; m += 10) {
@@ -132,7 +142,7 @@ basic.forever(function () {
                 let chi2 = (Az - AzEl_p[0]) ** 2 + (El - AzEl_p[1]) ** 2
                 //serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
                 //if (chi2 < 2) {
-                chi2_data_lst.set(3,[chi2,jd_i])
+                chi2_data_lst.set(3,[chi2,d,h,m])
                 chi2_data_lst.sort(function (a, b) { return a[0] - b[0] })
                 //}
             }
@@ -142,12 +152,12 @@ basic.forever(function () {
 
     chi2_data_lst.forEach (el=>{ 
         for (m = -5; m < 6; m++) {
-            let jd_i = el[1] + m / 60 / 24
+            let jd_i = jd + el[1] + (el[2] + (el[3] + m) / 60) / 24
             let AzEl_p = SolarAzEl(jd_i, 37.106203, -8.198446, 53)
             let chi2 = (Az - AzEl_p[0]) ** 2 + (El- AzEl_p[1]) ** 2
             //serial.writeLine("Time = " + d + " - " + h + ":" + m + ":" + s + " --- chi2 = " + chi2)
             //if (chi2 < .02) {
-            chi2_data2_lst.set(3, [chi2, jd_i])
+            chi2_data2_lst.set(3, [chi2, el[1], el[2], (el[3]+m)])
             chi2_data2_lst.sort(function (a, b) { return a[0] - b[0] })
             //}
         }
@@ -165,8 +175,8 @@ basic.forever(function () {
     serial.writeLine("Encontrou ")
     chi2_data2_lst.forEach(el => {
         //basic.showString("JD = " + chi2_data_lst[i])
-        let jd_Decimal = el[1] % 1
-        serial.writeLine("Chi2 = " + el[0] + " --- dia " + (1 + Math.floor(el[1] - jd)) + " --- " + Math.floor(jd_Decimal*24/60)+12)
+        
+        serial.writeLine("Chi2 = " + el[0] + " --- dia " + (1 + el[1]) + " --- " + (el[2]+12) + ":" + (el[3]) + "(UTC)")
        // serial.writeNumbers(chi2_data_lst)
   
     })  
